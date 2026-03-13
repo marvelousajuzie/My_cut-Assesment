@@ -161,3 +161,73 @@ export default function MyCutDeal() {
               </div>
             ))}
           </div>
+
+          {/* Stats Row */}
+          <div style={{ margin: "14px 24px 0", background: "white", borderRadius: "10px", padding: "18px 20px", display: "flex", gap: "0", border: "1px solid #E5E7EB" }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: "11px", fontWeight: 600, color: "#6B7280", letterSpacing: "0.6px", textTransform: "uppercase", marginBottom: "4px" }}>Total Deal Value</div>
+              <div style={{ fontSize: "22px", fontWeight: 700, color: "#111827" }}>₦24,000,000</div>
+            </div>
+            <div style={{ width: "1px", background: "#F3F4F6", margin: "0 20px" }} />
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: "11px", fontWeight: 600, color: "#6B7280", letterSpacing: "0.6px", textTransform: "uppercase", marginBottom: "4px" }}>Your Cut</div>
+              <div style={{ fontSize: "22px", fontWeight: 700, color: "#D97706" }}>₦15,000,000</div>
+              <div style={{ fontSize: "12px", color: "#6B7280", marginTop: "2px" }}>62.5% share</div>
+            </div>
+            <div style={{ width: "1px", background: "#F3F4F6", margin: "0 20px" }} />
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: "11px", fontWeight: 600, color: "#6B7280", letterSpacing: "0.6px", textTransform: "uppercase", marginBottom: "4px" }}>Platform Fee</div>
+              <div style={{ fontSize: "22px", fontWeight: 700, color: "#111827" }}>₦225,000</div>
+              <div style={{ fontSize: "12px", color: "#6B7280", marginTop: "2px" }}>1.5% · Deducted on exec.</div>
+            </div>
+          </div>
+
+          {/* Bottom Two Columns */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px", margin: "14px 24px 24px" }}>
+            {/* Split Breakdown */}
+            <div style={{ background: "white", borderRadius: "10px", padding: "18px", border: "1px solid #E5E7EB" }}>
+              <div style={{ fontSize: "11px", fontWeight: 700, color: "#6B7280", letterSpacing: "0.7px", textTransform: "uppercase", marginBottom: "14px" }}>Split Breakdown</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                {splitBreakdown.map((p) => (
+                  <div key={p.name} style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <div style={{ width: "36px", height: "36px", borderRadius: "8px", background: p.color, display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontSize: "12px", fontWeight: 700, flexShrink: 0 }}>
+                      {p.initials}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: "13px", fontWeight: 600, color: "#111827", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.name}</div>
+                      <div style={{ fontSize: "11px", color: "#9CA3AF" }}>{p.role}</div>
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      {p.pct && <div style={{ fontSize: "13px", fontWeight: 700, color: "#111827" }}>{p.pct}</div>}
+                      <div style={{ fontSize: "11px", color: "#6B7280" }}>{p.amount}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Deal Lifecycle */}
+            <div style={{ background: "white", borderRadius: "10px", padding: "18px", border: "1px solid #E5E7EB" }}>
+              <div style={{ fontSize: "11px", fontWeight: 700, color: "#6B7280", letterSpacing: "0.7px", textTransform: "uppercase", marginBottom: "14px" }}>Deal Lifecycle</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                {lifecycleSteps.map((step, i) => (
+                  <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
+                    <div style={{ marginTop: "2px", flexShrink: 0 }}>
+                      {step.done ? (
+                        <div style={{ width: "10px", height: "10px", borderRadius: "50%", background: step.active ? "#2D6A4F" : "#2D6A4F", border: step.active ? "2px solid #2D6A4F" : "none", boxSizing: "border-box" }} />
+                      ) : (
+                        <div style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#E5E7EB" }} />
+                      )}
+                    </div>
+                    <div>
+                      <div style={{ fontSize: "13px", fontWeight: step.active ? 700 : 500, color: step.done ? "#111827" : "#9CA3AF" }}>{step.label}</div>
+                      <div style={{ fontSize: "11px", color: step.active ? "#2D6A4F" : "#9CA3AF", marginTop: "1px" }}>{step.detail}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+      
