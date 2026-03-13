@@ -230,4 +230,89 @@ export default function MyCutDeal() {
           </div>
         </div>
 
-      
+        {/* RIGHT SIDEBAR */}
+        <div style={{ padding: "14px 16px 24px", display: "flex", flexDirection: "column", gap: "16px" }}>
+          {/* Confirmation & Execution */}
+          <div style={{ background: "white", borderRadius: "10px", border: "1px solid #E5E7EB", overflow: "hidden" }}>
+            <div style={{ padding: "16px 16px 0" }}>
+              <h2 style={{ fontSize: "16px", fontWeight: 700, color: "#111827", margin: "0 0 14px" }}>Confirmation &amp; Execution</h2>
+
+              {/* Confirmations box */}
+              <div style={{ background: "#F9FAFB", borderRadius: "8px", padding: "14px", marginBottom: "14px" }}>
+                <div style={{ fontSize: "11px", fontWeight: 600, color: "#6B7280", letterSpacing: "0.7px", textTransform: "uppercase", marginBottom: "8px" }}>Confirmations Received</div>
+                <div style={{ display: "flex", alignItems: "baseline", gap: "4px", marginBottom: "2px" }}>
+                  <span style={{ fontSize: "28px", fontWeight: 800, color: "#111827", lineHeight: 1 }}>2</span>
+                  <span style={{ fontSize: "16px", color: "#6B7280", fontWeight: 500 }}>of 3</span>
+                </div>
+                <div style={{ fontSize: "12px", color: "#6B7280", marginBottom: "10px" }}>1 confirmation needed for distribution</div>
+
+                {/* Progress bar */}
+                <div style={{ height: "6px", background: "#E5E7EB", borderRadius: "3px", marginBottom: "12px", overflow: "hidden" }}>
+                  <div style={{ width: "66.6%", height: "100%", background: "linear-gradient(90deg, #2D6A4F, #40916C)", borderRadius: "3px", transition: "width 0.5s ease" }} />
+                </div>
+
+                {/* Participants */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "7px" }}>
+                  {participants.map((p) => (
+                    <div key={p.name} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      {p.status === "Confirmed" ? <CheckCircleIcon /> : <PendingCircleIcon />}
+                      <span style={{ fontSize: "13px", color: p.status === "Confirmed" ? "#111827" : "#9CA3AF", fontWeight: p.status === "Confirmed" ? 500 : 400 }}>
+                        {p.name} — {p.status}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Awaiting button */}
+              <button style={{
+                width: "100%", padding: "12px", background: "#1C2B22", color: "white", border: "none",
+                borderRadius: "8px", fontSize: "13px", fontWeight: 600, cursor: "default", marginBottom: "16px",
+                letterSpacing: "0.1px"
+              }}>
+                Awaiting Adaeze's Confirmation
+              </button>
+            </div>
+
+            {/* Deal Actions */}
+            <div style={{ padding: "0 16px 16px" }}>
+              <div style={{ fontSize: "11px", fontWeight: 700, color: "#6B7280", letterSpacing: "0.7px", textTransform: "uppercase", marginBottom: "10px" }}>Deal Actions</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                <button style={{
+                  width: "100%", padding: "11px", background: "#2D6A4F", color: "white", border: "none",
+                  borderRadius: "8px", fontSize: "13px", fontWeight: 600, cursor: "default"
+                }}>
+                  You Already Confirmed ✓
+                </button>
+                <button style={{
+                  width: "100%", padding: "11px", background: "white", color: "#DC2626", border: "1px solid #FECACA",
+                  borderRadius: "8px", fontSize: "13px", fontWeight: 600, cursor: "pointer", transition: "all 0.15s"
+                }}
+                  onMouseEnter={e => (e.currentTarget.style.background = "#FEF2F2")}
+                  onMouseLeave={e => (e.currentTarget.style.background = "white")}
+                >
+                  Raise a Dispute
+                </button>
+                <button
+                  onClick={handleReminder}
+                  style={{
+                    width: "100%", padding: "11px", background: "white", color: reminderSent ? "#2D6A4F" : "#374151",
+                    border: `1px solid ${reminderSent ? "#A7F3D0" : "#E5E7EB"}`,
+                    borderRadius: "8px", fontSize: "13px", fontWeight: 600, cursor: "pointer", transition: "all 0.2s"
+                  }}
+                  onMouseEnter={e => { if (!reminderSent) e.currentTarget.style.background = "#F9FAFB"; }}
+                  onMouseLeave={e => { if (!reminderSent) e.currentTarget.style.background = "white"; }}
+                >
+                  {reminderSent ? "Reminder Sent ✓" : "Send Reminder to Adaeze"}
+                </button>
+              </div>
+
+              {/* Note */}
+              <div style={{ background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: "7px", padding: "10px 12px", marginTop: "12px" }}>
+                <span style={{ fontWeight: 700, fontSize: "12px", color: "#92400E" }}>Note: </span>
+                <span style={{ fontSize: "12px", color: "#92400E", lineHeight: 1.5 }}>
+                  Once all 3 confirmations are received, funds will distribute automatically to all parties. This action is irreversible.
+                </span>
+              </div>
+            </div>
+          </div>
