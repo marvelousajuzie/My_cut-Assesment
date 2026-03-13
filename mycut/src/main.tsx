@@ -316,3 +316,38 @@ export default function MyCutDeal() {
               </div>
             </div>
           </div>
+
+          {/* Deal Workspace */}
+          <div style={{ background: "white", borderRadius: "10px", border: "1px solid #E5E7EB", overflow: "hidden" }}>
+            <div style={{ padding: "14px 16px 6px" }}>
+              <div style={{ fontSize: "11px", fontWeight: 700, color: "#6B7280", letterSpacing: "0.7px", textTransform: "uppercase", marginBottom: "4px" }}>Deal Workspace</div>
+            </div>
+            {[
+              { label: "View Inbox Thread", tag: null },
+              { label: "Version History", tag: null },
+              { label: "Deal Wallet", tag: "₦24M held" },
+            ].map((item, i, arr) => (
+              <div key={item.label}>
+                <button style={{
+                  width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
+                  padding: "13px 16px", background: "none", border: "none", cursor: "pointer",
+                  transition: "background 0.15s"
+                }}
+                  onMouseEnter={e => (e.currentTarget.style.background = "#F9FAFB")}
+                  onMouseLeave={e => (e.currentTarget.style.background = "none")}
+                >
+                  <span style={{ fontSize: "13px", fontWeight: 500, color: "#374151" }}>{item.label}</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                    {item.tag && <span style={{ fontSize: "11px", color: "#6B7280", fontWeight: 500 }}>{item.tag}</span>}
+                    <ArrowRightIcon />
+                  </div>
+                </button>
+                {i < arr.length - 1 && <div style={{ height: "1px", background: "#F3F4F6", margin: "0 16px" }} />}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
