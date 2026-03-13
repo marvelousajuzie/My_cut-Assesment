@@ -1,4 +1,11 @@
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import {
+  deal,
+  formatNaira,
+  getPendingParticipant,
+  getConfirmedCount,
+  getTotalConfirmable,
+} from "./dealData.ts";
 
 
 
@@ -14,434 +21,535 @@ import { useState } from "react";
 
 
 
-const CheckCircleIcon = () => (
+const IconCheck = () => (
   <svg width="18" height="18" viewBox="0 0 18 18" fill="none" style={{ flexShrink: 0 }}>
     <circle cx="9" cy="9" r="9" fill="#2D6A4F" />
-    <path d="M5 9l3 3 5-5" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M5 9.2l2.6 2.6 4.8-5" stroke="#fff" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
 
-const PendingCircleIcon = () => (
+const IconPending = () => (
   <svg width="18" height="18" viewBox="0 0 18 18" fill="none" style={{ flexShrink: 0 }}>
-    <circle cx="9" cy="9" r="8.5" stroke="#D1D5DB" strokeWidth="1" fill="white" />
+    <circle cx="9" cy="9" r="8" stroke="#D1D5DB" strokeWidth="1.5" fill="white" />
   </svg>
 );
 
-const LocationIcon = () => (
-  <svg width="11" height="14" viewBox="0 0 12 14" fill="none" style={{ flexShrink: 0 }}>
-    <path d="M6 0C3.24 0 1 2.24 1 5c0 3.75 5 9 5 9s5-5.25 5-9c0-2.76-2.24-5-5-5zm0 6.5c-.83 0-1.5-.67-1.5-1.5S5.17 3.5 6 3.5s1.5.67 1.5 1.5S6.83 6.5 6 6.5z" fill="rgba(255,255,255,0.85)" />
+const IconChevronLeft = () => (
+  <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+    <path d="M9.5 3L5.5 7.5 9.5 12" stroke="#374151" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
 
-const BackIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-    <path d="M10 3L5 8l5 5" stroke="#374151" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+const IconPin = () => (
+  <svg width="11" height="14" viewBox="0 0 11 14" fill="none" style={{ flexShrink: 0 }}>
+    <path d="M5.5 0C3.01 0 1 2.01 1 4.5c0 3.38 4.5 9 4.5 9s4.5-5.62 4.5-9C10 2.01 7.99 0 5.5 0zm0 6.25a1.75 1.75 0 110-3.5 1.75 1.75 0 010 3.5z" fill="rgba(255,255,255,0.85)" />
   </svg>
 );
 
-const ArrowRightIcon = () => (
+const IconArrow = () => (
   <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
     <path d="M3 7h8M8 4l3 3-3 3" stroke="#9CA3AF" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
 
+/* ═══════════════════════════════════════════════════════════════════════
+   GLOBAL CSS
+═══════════════════════════════════════════════════════════════════════ */
+const CSS = `
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
 
-const participants = [
-  { name: "Drew Okonkwo (You)", status: "Confirmed" as const },
-  { name: "Emeka Tech Ltd", status: "Confirmed" as const },
-  { name: "Adaeze Kalu", status: "Pending" as const },
-];
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-const splitBreakdown = [
-  { initials: "DO", bg: "#1C3A2C", name: "Drew Okonkwo", role: "Creator · Organizer", pct: "62.5%", amount: "₦15,000,000" },
-  { initials: "ET", bg: "#1E4D35", name: "Emeka Tech Ltd", role: "Contributor · Co-investor", pct: "25.5%", amount: "₦6,120,000" },
-  { initials: "AK", bg: "#5B3E72", name: "Adaeze Kalu", role: "Agent · Commission", pct: "10%", amount: "₦2,400,000" },
-  { initials: "MC", bg: "#1A2035", name: "MyCut Platform", role: "Platform fee · Fixed", pct: "", amount: "₦225,000" },
-];
+.mc { min-height: 100vh; background: #F3F4F6; font-family: 'DM Sans', 'Segoe UI', sans-serif; color: #1F2937; }
 
-const lifecycleSteps = [
-  { label: "Draft Created", detail: "Feb 14, 2026 · 9:12 AM", done: true, active: false },
-  { label: "Roles Locked", detail: "Feb 15 · All 3 participants filled", done: true, active: false },
-  { label: "Deal Locked", detail: "Feb 16 · Terms v1.1 agreed", done: true, active: false },
-  { label: "Fully Funded", detail: "Feb 17 · ₦24M in escrow", done: true, active: false },
-  { label: "Confirmation Pending", detail: "2 of 3 confirmed · In progress", done: true, active: true },
-  { label: "Executed", detail: "Awaiting final confirmation", done: false, active: false },
-];
+/* ── NAV ── */
+.mc-nav {
+  background: #1B2B20; height: 52px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 24px; position: sticky; top: 0; z-index: 200;
+}
+.mc-nav-left { display: flex; align-items: center; gap: 8px; }
+.mc-nav-logo {
+  width: 30px; height: 30px; border-radius: 50%; background: #E8F5E9;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.mc-nav-brand { color: #fff; font-weight: 700; font-size: 15px; }
+.mc-nav-right { display: flex; align-items: center; gap: 10px; }
+.mc-nav-name { color: #D1FAE5; font-size: 14px; }
+.mc-nav-av {
+  width: 32px; height: 32px; border-radius: 50%; background: #374151;
+  display: flex; align-items: center; justify-content: center;
+  color: white; font-size: 13px; font-weight: 700; flex-shrink: 0;
+}
 
-const thumbnails = [
-  "https://images.unsplash.com/photo-1553413077-190dd305871c?w=80&h=60&fit=crop",
-  "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=80&h=60&fit=crop",
-  "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=80&h=60&fit=crop",
-  "https://images.unsplash.com/photo-1518770660439-4636190af475?w=80&h=60&fit=crop",
-];
+/* ── PAGE GRID ── */
+.mc-layout { display: grid; grid-template-columns: 1fr 344px; max-width: 1200px; margin: 0 auto; }
+.mc-left { min-width: 0; }
+.mc-right { padding: 16px 16px 32px; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 
-/* ─── Global CSS ─────────────────────────────────────────────────────── */
-const css = `
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+/* ── BACK LINK ── */
+.mc-back {
+  display: inline-flex; align-items: center; gap: 3px;
+  background: none; border: none; cursor: pointer;
+  font-size: 13px; font-weight: 500; color: #374151;
+  padding: 14px 24px 0; font-family: inherit;
+}
+.mc-back:hover { color: #111827; }
 
-  .mc-root {
-    min-height: 100vh;
-    background: #F3F4F6;
-    font-family: 'DM Sans', 'Segoe UI', sans-serif;
-    color: #1F2937;
-  }
+/* ══════════════════════════════════════════════
+   ZONE A — HERO CAROUSEL
+══════════════════════════════════════════════ */
+.hero-wrap {
+  position: relative; margin: 12px 24px 0;
+  border-radius: 12px; overflow: hidden; height: 292px;
+}
 
-  /* NAV */
-  .mc-nav {
-    background: #1B2B20;
-    height: 52px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 24px;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-  }
-  .mc-nav-logo { display: flex; align-items: center; gap: 8px; }
-  .mc-nav-badge {
-    width: 30px; height: 30px; border-radius: 50%;
-    background: #E8F5E9;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .mc-nav-name { color: white; font-weight: 700; font-size: 15px; letter-spacing: 0.2px; }
-  .mc-nav-user { display: flex; align-items: center; gap: 10px; }
-  .mc-nav-username { color: #D1FAE5; font-size: 14px; }
-  .mc-nav-avatar {
-    width: 32px; height: 32px; border-radius: 50%;
-    background: #374151;
-    display: flex; align-items: center; justify-content: center;
-    color: white; font-size: 13px; font-weight: 700;
-    flex-shrink: 0;
-  }
+/* Media layers — crossfade */
+.hero-media-layer {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  transition: opacity 0.5s ease;
+}
+.hero-media-layer.visible { opacity: 1; z-index: 1; }
+.hero-media-layer.hidden  { opacity: 0; z-index: 0; pointer-events: none; }
 
-  /* PAGE GRID */
-  .mc-layout {
-    display: grid;
-    grid-template-columns: 1fr 340px;
-    max-width: 1180px;
-    margin: 0 auto;
-  }
+.hero-media-layer img,
+.hero-media-layer video {
+  width: 100%; height: 100%;
+  object-fit: cover; object-position: center; display: block;
+}
+.hero-media-layer video { background: #000; }
 
-  /* LEFT */
-  .mc-left { min-width: 0; }
+/* Gradient overlay */
+.hero-overlay {
+  position: absolute; inset: 0; z-index: 2;
+  background: linear-gradient(to top, rgba(0,0,0,0.78) 38%, rgba(0,0,0,0.06) 100%);
+  pointer-events: none;
+}
 
-  .mc-back {
-    display: inline-flex; align-items: center; gap: 4px;
-    background: none; border: none; cursor: pointer;
-    font-size: 13px; color: #374151; font-weight: 500;
-    padding: 14px 24px 0;
-    font-family: inherit;
-  }
-  .mc-back:hover { color: #111827; }
+/* Overlay text */
+.hero-text { position: absolute; z-index: 3; left: 20px; right: 20px; bottom: 14px; }
+.hero-breadcrumb {
+  display: flex; align-items: center; gap: 6px;
+  color: rgba(255,255,255,0.62); font-size: 12px; margin-bottom: 8px;
+}
+.hero-title {
+  color: #fff; font-size: 21px; font-weight: 800;
+  line-height: 1.3; letter-spacing: -0.2px; margin-bottom: 11px;
+}
+.hero-badges { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
-  /* HERO */
-  .mc-hero {
-    position: relative;
-    margin: 12px 24px 0;
-    border-radius: 12px;
-    overflow: hidden;
-    height: 290px;
-  }
-  .mc-hero img {
-    width: 100%; height: 100%;
-    object-fit: cover;
-    object-position: center;
-    display: block;
-  }
-  .mc-hero-overlay {
-    position: absolute; inset: 0;
-    background: linear-gradient(to top, rgba(0,0,0,0.76) 42%, rgba(0,0,0,0.08) 100%);
-  }
-  .mc-hero-breadcrumb {
-    position: absolute; bottom: 68px; left: 20px;
-    display: flex; align-items: center; gap: 6px;
-    color: rgba(255,255,255,0.65); font-size: 12px;
-  }
-  .mc-hero-body {
-    position: absolute; bottom: 16px; left: 20px; right: 20px;
-  }
-  .mc-hero-title {
-    color: white;
-    font-size: 21px; font-weight: 800;
-    margin: 0 0 10px;
-    line-height: 1.32;
-    letter-spacing: -0.2px;
-  }
-  .mc-hero-badges { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-  .mc-badge-dark {
-    background: rgba(55,65,81,0.9);
-    color: #D1FAE5;
-    font-size: 10.5px; font-weight: 700;
-    padding: 3px 9px; border-radius: 4px;
-    letter-spacing: 0.5px;
-  }
-  .mc-badge-pending {
-    background: rgba(251,191,36,0.16);
-    border: 1px solid rgba(251,191,36,0.45);
-    color: #FCD34D;
-    font-size: 10.5px; font-weight: 700;
-    padding: 3px 9px; border-radius: 4px;
-    letter-spacing: 0.5px;
-    display: flex; align-items: center; gap: 5px;
-  }
-  .mc-badge-dot { width: 6px; height: 6px; border-radius: 50%; background: #FCD34D; flex-shrink: 0; }
-  .mc-badge-loc { display: flex; align-items: center; gap: 4px; color: rgba(255,255,255,0.8); font-size: 12px; }
+.badge-dark {
+  background: rgba(31,41,55,0.88); color: #D1FAE5;
+  font-size: 10.5px; font-weight: 700; padding: 3px 9px;
+  border-radius: 4px; letter-spacing: 0.5px;
+}
+.badge-status {
+  background: rgba(251,191,36,0.15); border: 1px solid rgba(251,191,36,0.45);
+  color: #FCD34D; font-size: 10.5px; font-weight: 700;
+  padding: 3px 9px; border-radius: 4px; letter-spacing: 0.4px;
+  display: flex; align-items: center; gap: 5px;
+}
+.badge-status-dot { width: 5px; height: 5px; border-radius: 50%; background: #FCD34D; flex-shrink: 0; }
+.badge-loc { display: flex; align-items: center; gap: 4px; color: rgba(255,255,255,0.8); font-size: 12px; }
 
-  /* THUMBS */
-  .mc-thumbs { display: flex; gap: 8px; padding: 10px 24px 0; }
-  .mc-thumb {
-    width: 70px; height: 52px;
-    border-radius: 7px; overflow: hidden;
-    cursor: pointer;
-    border: 2px solid transparent;
-    opacity: 0.72;
-    transition: all 0.15s;
-    flex-shrink: 0;
-  }
-  .mc-thumb.active { border-color: #2D6A4F; opacity: 1; }
-  .mc-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* THUMBNAILS */
+.thumbs { display: flex; gap: 8px; padding: 10px 24px 0; overflow-x: auto; }
+.thumbs::-webkit-scrollbar { height: 0; }
+.thumb {
+  width: 72px; height: 54px; border-radius: 7px; overflow: hidden;
+  flex-shrink: 0; cursor: pointer;
+  border: 2px solid transparent;
+  opacity: 0.65;
+  transition: opacity 0.15s, border-color 0.15s;
+  position: relative;
+}
+.thumb.active { border-color: #2D6A4F; opacity: 1; }
+.thumb:hover:not(.active) { opacity: 0.9; }
+.thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.thumb-video-badge {
+  position: absolute; bottom: 3px; right: 4px;
+  background: rgba(0,0,0,0.6); border-radius: 3px;
+  padding: 1px 4px; color: #fff; font-size: 9px; font-weight: 700;
+}
 
-  /* STATS */
-  .mc-stats {
-    margin: 14px 24px 0;
-    background: white;
-    border-radius: 10px;
-    padding: 18px 22px;
-    display: flex;
-    border: 1px solid #E5E7EB;
-  }
-  .mc-stat { flex: 1; min-width: 0; }
-  .mc-stat-div { width: 1px; background: #F3F4F6; margin: 0 20px; flex-shrink: 0; }
-  .mc-stat-lbl { font-size: 10.5px; font-weight: 700; color: #9CA3AF; letter-spacing: 0.6px; text-transform: uppercase; margin-bottom: 5px; }
-  .mc-stat-val { font-size: 20px; font-weight: 800; color: #111827; line-height: 1.2; }
-  .mc-stat-val.amber { color: #D97706; }
-  .mc-stat-sub { font-size: 11.5px; color: #6B7280; margin-top: 3px; }
+/* ══════════════════════════════════════════════
+   ZONE B — FINANCIAL SUMMARY
+══════════════════════════════════════════════ */
+.fin-bar {
+  margin: 14px 24px 0; background: #fff;
+  border-radius: 10px; padding: 18px 22px;
+  display: flex; border: 1px solid #E5E7EB;
+}
+.fin-tile { flex: 1; min-width: 0; }
+.fin-div { width: 1px; background: #F3F4F6; margin: 0 20px; flex-shrink: 0; }
+.fin-lbl { font-size: 10.5px; font-weight: 700; color: #9CA3AF; letter-spacing: 0.6px; text-transform: uppercase; margin-bottom: 5px; }
+.fin-val { font-size: 20px; font-weight: 800; color: #111827; line-height: 1.2; }
+.fin-val.amber { color: #D97706; }
+.fin-sub { font-size: 11.5px; color: #6B7280; margin-top: 3px; }
 
-  /* BOTTOM GRID */
-  .mc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 14px 24px 28px; }
-  .mc-card { background: white; border-radius: 10px; padding: 18px; border: 1px solid #E5E7EB; }
-  .mc-card-lbl { font-size: 10.5px; font-weight: 700; color: #9CA3AF; letter-spacing: 0.7px; text-transform: uppercase; margin-bottom: 14px; }
+/* ══════════════════════════════════════════════
+   ZONE C — SPLIT + LIFECYCLE
+══════════════════════════════════════════════ */
+.zone-c { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 14px 24px 28px; }
+.card { background: #fff; border-radius: 10px; padding: 18px; border: 1px solid #E5E7EB; }
+.card-lbl { font-size: 10.5px; font-weight: 700; color: #9CA3AF; letter-spacing: 0.7px; text-transform: uppercase; margin-bottom: 14px; }
 
-  /* SPLIT */
-  .split-list { display: flex; flex-direction: column; gap: 12px; }
-  .split-row { display: flex; align-items: center; gap: 10px; }
-  .split-av { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: 700; flex-shrink: 0; }
-  .split-info { flex: 1; min-width: 0; }
-  .split-nm { font-size: 13px; font-weight: 600; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .split-rl { font-size: 11px; color: #9CA3AF; margin-top: 1px; }
-  .split-rt { text-align: right; flex-shrink: 0; }
-  .split-pct { font-size: 13px; font-weight: 700; color: #111827; }
-  .split-amt { font-size: 11px; color: #6B7280; margin-top: 1px; }
+/* Split rows */
+.split-list { display: flex; flex-direction: column; gap: 12px; }
+.split-row { display: flex; align-items: center; gap: 10px; }
+.split-av {
+  width: 36px; height: 36px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 12px; font-weight: 700; flex-shrink: 0;
+}
+.split-av.platform { border-radius: 50%; }
+.split-info { flex: 1; min-width: 0; }
+.split-name { font-size: 13px; font-weight: 600; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.split-name.platform { color: #6B7280; font-style: italic; font-weight: 500; }
+.split-role { font-size: 11px; color: #9CA3AF; margin-top: 1px; }
+.split-role.platform { font-style: italic; }
+.split-right { text-align: right; flex-shrink: 0; }
+.split-pct { font-size: 13px; font-weight: 700; color: #111827; }
+.split-amt { font-size: 11px; color: #6B7280; margin-top: 1px; }
+.split-amt.platform { color: #9CA3AF; }
 
-  /* LIFECYCLE */
-  .lc-list { display: flex; flex-direction: column; gap: 13px; }
-  .lc-row { display: flex; align-items: flex-start; gap: 10px; }
-  .lc-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 3px; }
-  .lc-dot.done { background: #2D6A4F; }
-  .lc-dot.grey { background: #E5E7EB; }
-  .lc-lbl { font-size: 13px; font-weight: 500; color: #111827; }
-  .lc-lbl.bold { font-weight: 700; }
-  .lc-lbl.muted { color: #9CA3AF; }
-  .lc-dtl { font-size: 11px; color: #9CA3AF; margin-top: 2px; }
-  .lc-dtl.green { color: #2D6A4F; font-weight: 500; }
+/* Lifecycle timeline */
+.lc-list { display: flex; flex-direction: column; gap: 0; }
+.lc-item { display: flex; align-items: flex-start; gap: 12px; position: relative; }
+.lc-item:not(:last-child) .lc-dot-col::after {
+  content: '';
+  position: absolute; left: 4px; top: 18px;
+  width: 2px; height: calc(100% + 0px);
+  background: #E5E7EB;
+  z-index: 0;
+}
+.lc-item { padding-bottom: 14px; }
+.lc-item:last-child { padding-bottom: 0; }
 
-  /* RIGHT SIDEBAR */
-  .mc-right { padding: 14px 16px 28px; display: flex; flex-direction: column; gap: 16px; }
-  .mc-scard { background: white; border-radius: 10px; border: 1px solid #E5E7EB; overflow: hidden; }
-  .mc-stitle { font-size: 16px; font-weight: 700; color: #111827; padding: 16px 16px 0; margin-bottom: 14px; }
+.lc-dot-col { position: relative; width: 10px; flex-shrink: 0; margin-top: 3px; }
+.lc-dot {
+  width: 10px; height: 10px; border-radius: 50%; position: relative; z-index: 1;
+}
+.lc-dot.completed { background: #2D6A4F; }
+.lc-dot.active {
+  background: #2D6A4F;
+  box-shadow: 0 0 0 0 rgba(45,106,79,0.5);
+  animation: pulse-dot 1.6s ease-in-out infinite;
+}
+.lc-dot.future { background: transparent; border: 2px solid #D1D5DB; width: 10px; height: 10px; }
 
-  /* CONF BOX */
-  .mc-confbox { background: #F9FAFB; border-radius: 8px; padding: 14px; margin: 0 16px 14px; }
-  .mc-confbox-lbl { font-size: 10.5px; font-weight: 700; color: #9CA3AF; letter-spacing: 0.7px; text-transform: uppercase; margin-bottom: 8px; }
-  .mc-confbox-count { display: flex; align-items: baseline; gap: 4px; margin-bottom: 2px; }
-  .mc-confbox-num { font-size: 30px; font-weight: 800; color: #111827; line-height: 1; }
-  .mc-confbox-of { font-size: 17px; color: #6B7280; font-weight: 500; }
-  .mc-confbox-sub { font-size: 12px; color: #6B7280; margin-bottom: 10px; }
-  .mc-prog { height: 6px; background: #E5E7EB; border-radius: 3px; margin-bottom: 13px; overflow: hidden; }
-  .mc-prog-fill { width: 66.66%; height: 100%; background: linear-gradient(90deg, #2D6A4F, #40916C); border-radius: 3px; }
-  .mc-parts { display: flex; flex-direction: column; gap: 8px; }
-  .mc-part-row { display: flex; align-items: center; gap: 8px; }
-  .mc-part-name { font-size: 13px; color: #111827; font-weight: 500; }
-  .mc-part-name.pending { color: #9CA3AF; font-weight: 400; }
+@keyframes pulse-dot {
+  0%   { box-shadow: 0 0 0 0 rgba(45,106,79,0.55); }
+  60%  { box-shadow: 0 0 0 7px rgba(45,106,79,0); }
+  100% { box-shadow: 0 0 0 0 rgba(45,106,79,0); }
+}
 
-  /* AWAITING */
-  .mc-awaiting {
-    display: block;
-    width: calc(100% - 32px);
-    margin: 0 16px 0;
-    padding: 12px;
-    background: #1C2B22;
-    color: white; border: none; border-radius: 8px;
-    font-size: 13px; font-weight: 600; cursor: default;
-    text-align: center; font-family: inherit;
-    letter-spacing: 0.1px;
-  }
+.lc-body { flex: 1; min-width: 0; }
+.lc-label { font-size: 13px; font-weight: 500; color: #111827; line-height: 1.3; }
+.lc-label.active { font-weight: 700; color: #111827; }
+.lc-label.future { color: #9CA3AF; }
+.lc-date { font-size: 11px; color: #9CA3AF; margin-top: 2px; }
+.lc-date.active { color: #2D6A4F; font-weight: 500; }
+.lc-date.future { color: #C4C9D4; }
 
-  /* ACTIONS */
-  .mc-actions-lbl { font-size: 10.5px; font-weight: 700; color: #9CA3AF; letter-spacing: 0.7px; text-transform: uppercase; padding: 14px 16px 0; margin-bottom: 10px; display: block; }
-  .mc-actions { padding: 0 16px 0; display: flex; flex-direction: column; gap: 8px; }
-  .mc-btn-confirmed { width: 100%; padding: 11px; background: #2D6A4F; color: white; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: default; font-family: inherit; }
-  .mc-btn-dispute { width: 100%; padding: 11px; background: white; color: #DC2626; border: 1px solid #FECACA; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; transition: background 0.15s; }
-  .mc-btn-dispute:hover { background: #FEF2F2; }
-  .mc-btn-reminder { width: 100%; padding: 11px; background: white; color: #374151; border: 1px solid #E5E7EB; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; transition: all 0.2s; }
-  .mc-btn-reminder:hover { background: #F9FAFB; }
-  .mc-btn-reminder.sent { color: #2D6A4F; border-color: #A7F3D0; background: #F0FDF4; }
+/* ══════════════════════════════════════════════
+   ZONE D — SIDEBAR
+══════════════════════════════════════════════ */
+.scard { background: #fff; border-radius: 10px; border: 1px solid #E5E7EB; overflow: hidden; }
+.scard-title { font-size: 16px; font-weight: 700; color: #111827; padding: 16px 16px 0; margin-bottom: 14px; }
 
-  /* NOTE */
-  .mc-note { background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 7px; padding: 10px 12px; margin: 12px 16px 16px; font-size: 12px; color: #92400E; line-height: 1.55; }
-  .mc-note strong { font-weight: 700; }
+/* Conf box */
+.conf-box { background: #F9FAFB; border-radius: 8px; padding: 14px; margin: 0 16px 0; }
+.conf-lbl { font-size: 10px; font-weight: 700; color: #9CA3AF; letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 8px; }
+.conf-count { display: flex; align-items: baseline; gap: 4px; margin-bottom: 2px; }
+.conf-num { font-size: 32px; font-weight: 800; color: #111827; line-height: 1; }
+.conf-of { font-size: 17px; color: #6B7280; font-weight: 500; }
+.conf-sub { font-size: 12px; color: #6B7280; margin-bottom: 11px; }
 
-  /* WORKSPACE */
-  .mc-ws-lbl { font-size: 10.5px; font-weight: 700; color: #9CA3AF; letter-spacing: 0.7px; text-transform: uppercase; padding: 14px 16px 6px; display: block; }
-  .mc-ws-div { height: 1px; background: #F3F4F6; margin: 0 16px; }
-  .mc-ws-row {
-    width: 100%; display: flex; align-items: center; justify-content: space-between;
-    padding: 13px 16px; background: none; border: none;
-    cursor: pointer; transition: background 0.15s; font-family: inherit;
-  }
-  .mc-ws-row:hover { background: #F9FAFB; }
-  .mc-ws-rowlbl { font-size: 13px; font-weight: 500; color: #374151; }
-  .mc-ws-right { display: flex; align-items: center; gap: 6px; }
-  .mc-ws-tag { font-size: 11px; color: #6B7280; font-weight: 500; }
+/* Progress bar */
+.prog-track { height: 7px; background: #E5E7EB; border-radius: 4px; margin-bottom: 13px; overflow: hidden; }
+.prog-fill {
+  height: 100%; border-radius: 4px;
+  background: linear-gradient(90deg, #2D6A4F 0%, #40916C 100%);
+  transition: width 0.6s ease;
+}
 
-  /* ═══ RESPONSIVE ═══ */
-  @media (max-width: 960px) {
-    .mc-layout { grid-template-columns: 1fr; }
-    .mc-right { padding: 0 20px 28px; }
-  }
+.part-list { display: flex; flex-direction: column; gap: 8px; }
+.part-row { display: flex; align-items: center; gap: 8px; }
+.part-name { font-size: 13px; font-weight: 500; color: #111827; }
+.part-name.pending-name { color: #9CA3AF; font-weight: 400; }
 
-  @media (max-width: 640px) {
-    .mc-nav { padding: 0 16px; }
-    .mc-nav-username { display: none; }
-    .mc-back { padding: 12px 16px 0; }
-    .mc-hero { margin: 10px 16px 0; height: 210px; border-radius: 10px; }
-    .mc-hero-title { font-size: 15px; margin-bottom: 7px; }
-    .mc-hero-breadcrumb { bottom: 58px; left: 14px; }
-    .mc-hero-body { left: 14px; right: 14px; bottom: 12px; }
-    .mc-thumbs { padding: 8px 16px 0; gap: 6px; }
-    .mc-thumb { width: 60px; height: 46px; }
-    .mc-stats { margin: 12px 16px 0; padding: 14px 16px; flex-direction: column; gap: 14px; }
-    .mc-stat-div { width: 100%; height: 1px; margin: 0; }
-    .mc-grid { grid-template-columns: 1fr; margin: 12px 16px 20px; gap: 12px; }
-    .mc-right { padding: 0 16px 24px; }
-  }
+/* Awaiting btn */
+.awaiting-btn {
+  display: block; width: calc(100% - 32px); margin: 12px 16px 0;
+  padding: 12px 14px; background: #1C2B22; color: #fff;
+  border: none; border-radius: 8px; font-size: 13px; font-weight: 600;
+  cursor: default; text-align: center; font-family: inherit; letter-spacing: 0.1px;
+}
 
-  @media (max-width: 400px) {
-    .mc-hero { height: 185px; }
-    .mc-hero-title { font-size: 13.5px; }
-    .mc-stat-val { font-size: 18px; }
-  }
+/* Actions */
+.actions-lbl {
+  display: block; font-size: 10px; font-weight: 700; color: #9CA3AF;
+  letter-spacing: 0.8px; text-transform: uppercase;
+  padding: 14px 16px 0; margin-bottom: 10px;
+}
+.actions-list { padding: 0 16px 0; display: flex; flex-direction: column; gap: 8px; }
+
+.btn-base {
+  width: 100%; padding: 11px 14px; border-radius: 8px;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  font-family: inherit; transition: all 0.15s; text-align: center; border: 1px solid transparent;
+}
+.btn-confirmed { background: #2D6A4F; color: #fff; border-color: #2D6A4F; cursor: default; opacity: 0.92; }
+.btn-dispute   { background: #fff; color: #DC2626; border-color: #FECACA; }
+.btn-dispute:hover { background: #FEF2F2; }
+.btn-reminder  { background: #fff; color: #374151; border-color: #E5E7EB; }
+.btn-reminder:hover { background: #F9FAFB; }
+.btn-reminder.sent { color: #2D6A4F; border-color: #A7F3D0; background: #F0FDF4; }
+
+/* Note */
+.note-box {
+  background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 7px;
+  padding: 10px 12px; margin: 12px 16px 16px;
+  font-size: 12px; color: #92400E; line-height: 1.55;
+}
+.note-box strong { font-weight: 700; }
+
+/* Workspace */
+.ws-lbl {
+  display: block; font-size: 10px; font-weight: 700; color: #9CA3AF;
+  letter-spacing: 0.8px; text-transform: uppercase;
+  padding: 14px 16px 8px;
+}
+.ws-div { height: 1px; background: #F3F4F6; margin: 0 16px; }
+.ws-row {
+  width: 100%; display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px; background: none; border: none; cursor: pointer;
+  transition: background 0.15s; font-family: inherit;
+}
+.ws-row:hover { background: #F9FAFB; }
+.ws-row-label { font-size: 13px; font-weight: 500; color: #374151; }
+.ws-row-right { display: flex; align-items: center; gap: 6px; }
+.ws-tag { font-size: 11px; color: #6B7280; font-weight: 500; }
+
+/* ══════════════════════════════════════════════
+   RESPONSIVE
+══════════════════════════════════════════════ */
+@media (max-width: 980px) {
+  .mc-layout { grid-template-columns: 1fr; }
+  .mc-right { padding: 0 20px 28px; }
+}
+@media (max-width: 640px) {
+  .mc-nav { padding: 0 16px; }
+  .mc-nav-name { display: none; }
+  .mc-back { padding: 12px 16px 0; }
+  .hero-wrap { margin: 10px 14px 0; height: 210px; border-radius: 10px; }
+  .hero-title { font-size: 15px; }
+  .thumbs { padding: 8px 14px 0; }
+  .thumb { width: 60px; height: 46px; }
+  .fin-bar { margin: 12px 14px 0; padding: 14px 16px; flex-direction: column; gap: 14px; }
+  .fin-div { width: 100%; height: 1px; margin: 0; }
+  .zone-c { grid-template-columns: 1fr; margin: 12px 14px 20px; }
+  .mc-right { padding: 0 14px 24px; }
+}
+@media (max-width: 380px) {
+  .hero-wrap { height: 180px; }
+  .hero-title { font-size: 13.5px; }
+  .fin-val { font-size: 17px; }
+}
 `;
 
-/* ─── Main Component ─────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════════
+   COMPONENT
+═══════════════════════════════════════════════════════════════════════ */
 export default function MyCutDeal() {
-  const [activeThumb, setActiveThumb] = useState(0);
+  const [activeIdx, setActiveIdx] = useState(0);
+  const [visibleIdx, setVisibleIdx] = useState(0);   // lags for crossfade
+  const [transitioning, setTransitioning] = useState(false);
   const [reminderSent, setReminderSent] = useState(false);
+  const transTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const pendingParticipant = getPendingParticipant(deal);
+  const confirmedCount     = getConfirmedCount(deal);
+  const totalConfirmable   = getTotalConfirmable(deal);
+  const progressPct        = (confirmedCount / totalConfirmable) * 100;
+
+  // Crossfade: swap visibleIdx after fade-in completes
+  const handleThumbClick = useCallback((idx: number) => {
+    if (idx === activeIdx || transitioning) return;
+    if (transTimer.current) clearTimeout(transTimer.current);
+    setActiveIdx(idx);
+    setTransitioning(true);
+    transTimer.current = setTimeout(() => {
+      setVisibleIdx(idx);
+      setTransitioning(false);
+    }, 480);
+  }, [activeIdx, transitioning]);
+
+  useEffect(() => () => { if (transTimer.current) clearTimeout(transTimer.current); }, []);
 
   return (
     <>
-      <style>{css}</style>
-      <div className="mc-root">
+      <style>{CSS}</style>
+      <div className="mc">
 
-        {/* NAV */}
+        {/* ── NAV ── */}
         <nav className="mc-nav">
-          <div className="mc-nav-logo">
-            <div className="mc-nav-badge">
-              <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+          <div className="mc-nav-left">
+            <div className="mc-nav-logo">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="none">
                 <path d="M10 2C6 2 3 5.5 3 10s3 8 7 8 7-3.5 7-8-3-8-7-8z" fill="#2D6A4F" />
                 <path d="M7 10l2 2 4-4" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </div>
-            <span className="mc-nav-name">MyCut</span>
+            <span className="mc-nav-brand">MyCut</span>
           </div>
-          <div className="mc-nav-user">
-            <span className="mc-nav-username">Drew Okonkwo</span>
-            <div className="mc-nav-avatar">D</div>
+          <div className="mc-nav-right">
+            <span className="mc-nav-name">Drew Okonkwo</span>
+            <div className="mc-nav-av">D</div>
           </div>
         </nav>
 
-        {/* LAYOUT */}
+        {/* ── LAYOUT ── */}
         <div className="mc-layout">
 
-          {/* ── LEFT ── */}
+          {/* ════════ LEFT ════════ */}
           <div className="mc-left">
-            <button className="mc-back"><BackIcon />&nbsp;Back to Contracts</button>
+            <button className="mc-back"><IconChevronLeft />&nbsp;Back to Contracts</button>
 
-            {/* HERO */}
-            <div className="mc-hero">
-              <img src="images/hero_section.jpg" alt="Warehouse interior" />
-              <div className="mc-hero-overlay" />
-              <div className="mc-hero-breadcrumb">
-                <span>Contracts</span>
-                <span style={{ opacity: 0.5 }}>›</span>
-                <span>Deal #12345</span>
-              </div>
-              <div className="mc-hero-body">
-                <h1 className="mc-hero-title">Samsung &amp; LG Appliances — Bulk Import Q1 2025</h1>
-                <div className="mc-hero-badges">
-                  <span className="mc-badge-dark">ELECTRONICS IMPORT</span>
-                  <span className="mc-badge-pending">
-                    <span className="mc-badge-dot" />
-                    CONFIRMATION PENDING
+            {/* ══ ZONE A: HERO CAROUSEL ══ */}
+            <div className="hero-wrap">
+              {/* Crossfade layers — one per media item */}
+              {deal.media.map((item, i) => {
+                const isTarget  = i === activeIdx;
+                const isCurrent = i === visibleIdx;
+                // visible = either the new target (fading in) or the old one (fading out)
+                const show = isTarget || isCurrent;
+                if (!show) return null;
+                const opacity = isTarget ? 1 : 0;
+                return (
+                  <div
+                    key={item.id}
+                    className="hero-media-layer"
+                    style={{ opacity, transition: "opacity 0.5s ease", zIndex: isTarget ? 1 : 0 }}
+                  >
+                    {item.type === "video" ? (
+                      <video
+                        src={item.src}
+                        controls
+                        playsInline
+                        style={{ width: "100%", height: "100%", objectFit: "cover", background: "#000" }}
+                        aria-label={item.alt}
+                      />
+                    ) : (
+                      <img src={item.src} alt={item.alt} />
+                    )}
+                  </div>
+                );
+              })}
+
+              {/* Gradient overlay */}
+              <div className="hero-overlay" />
+
+              {/* Overlay text */}
+              <div className="hero-text">
+                <div className="hero-breadcrumb">
+                  <span>Contracts</span>
+                  <span style={{ opacity: 0.45 }}>›</span>
+                  <span>Deal {deal.dealId}</span>
+                </div>
+                <h1 className="hero-title">{deal.title}</h1>
+                <div className="hero-badges">
+                  <span className="badge-dark">{deal.category}</span>
+                  <span className="badge-status">
+                    <span className="badge-status-dot" />
+                    {deal.statusBadge}
                   </span>
-                  <span className="mc-badge-loc">
-                    <LocationIcon />
-                    Lekki Free Zone, Lagos
+                  <span className="badge-loc">
+                    <IconPin />
+                    {deal.location}
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* THUMBNAILS */}
-            <div className="mc-thumbs">
-              {thumbnails.map((src, i) => (
+            {/* Thumbnail strip */}
+            <div className="thumbs">
+              {deal.media.map((item, i) => (
                 <div
-                  key={i}
-                  className={`mc-thumb${activeThumb === i ? " active" : ""}`}
-                  onClick={() => setActiveThumb(i)}
+                  key={item.id}
+                  className={`thumb${activeIdx === i ? " active" : ""}`}
+                  onClick={() => handleThumbClick(i)}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`View media ${i + 1}: ${item.alt}`}
+                  onKeyDown={(e) => e.key === "Enter" && handleThumbClick(i)}
                 >
-                  <img src={src} alt={`Deal photo ${i + 1}`} />
+                  <img src={item.thumb} alt={item.alt} />
+                  {item.type === "video" && (
+                    <span className="thumb-video-badge">▶ VID</span>
+                  )}
                 </div>
               ))}
             </div>
 
-            {/* STATS */}
-            <div className="mc-stats">
-              <div className="mc-stat">
-                <div className="mc-stat-lbl">Total Deal Value</div>
-                <div className="mc-stat-val">₦24,000,000</div>
+            {/* ══ ZONE B: FINANCIAL SUMMARY ══ */}
+            <div className="fin-bar">
+              <div className="fin-tile">
+                <div className="fin-lbl">Total Deal Value</div>
+                <div className="fin-val">{formatNaira(deal.totalDealValue)}</div>
               </div>
-              <div className="mc-stat-div" />
-              <div className="mc-stat">
-                <div className="mc-stat-lbl">Your Cut</div>
-                <div className="mc-stat-val amber">₦15,000,000</div>
-                <div className="mc-stat-sub">62.5% share</div>
-              </div>
-              <div className="mc-stat-div" />
-              <div className="mc-stat">
-                <div className="mc-stat-lbl">Platform Fee</div>
-                <div className="mc-stat-val">₦225,000</div>
-                <div className="mc-stat-sub">1.5% · Deducted on exec.</div>
-              </div>
+              <div className="fin-div" />
+              {(() => {
+                const loggedIn = deal.participants.find((p) => p.isLoggedIn)!;
+                return (
+                  <div className="fin-tile">
+                    <div className="fin-lbl">Your Cut</div>
+                    <div className="fin-val amber">{formatNaira(loggedIn.amount)}</div>
+                    <div className="fin-sub">{loggedIn.percentage}% share</div>
+                  </div>
+                );
+              })()}
+              <div className="fin-div" />
+              {(() => {
+                const platform = deal.participants.find((p) => p.isPlatform)!;
+                return (
+                  <div className="fin-tile">
+                    <div className="fin-lbl">Platform Fee</div>
+                    <div className="fin-val">{formatNaira(platform.amount)}</div>
+                    <div className="fin-sub">1.5% · Deducted on exec.</div>
+                  </div>
+                );
+              })()}
             </div>
 
-            {/* SPLIT + LIFECYCLE */}
-            <div className="mc-grid">
+            {/* ══ ZONE C: SPLIT + LIFECYCLE ══ */}
+            <div className="zone-c">
+
               {/* Split Breakdown */}
-              <div className="mc-card">
-                <div className="mc-card-lbl">Split Breakdown</div>
+              <div className="card">
+                <div className="card-lbl">Split Breakdown</div>
                 <div className="split-list">
-                  {splitBreakdown.map((p) => (
-                    <div key={p.name} className="split-row">
-                      <div className="split-av" style={{ background: p.bg }}>{p.initials}</div>
-                      <div className="split-info">
-                        <div className="split-nm">{p.name}</div>
-                        <div className="split-rl">{p.role}</div>
+                  {deal.participants.map((p) => (
+                    <div key={p.id} className="split-row">
+                      <div
+                        className={`split-av${p.isPlatform ? " platform" : ""}`}
+                        style={{ background: p.avatarColor }}
+                      >
+                        {p.initials}
                       </div>
-                      <div className="split-rt">
-                        {p.pct && <div className="split-pct">{p.pct}</div>}
-                        <div className="split-amt">{p.amount}</div>
+                      <div className="split-info">
+                        <div className={`split-name${p.isPlatform ? " platform" : ""}`}>{p.name}</div>
+                        <div className={`split-role${p.isPlatform ? " platform" : ""}`}>{p.role}</div>
+                      </div>
+                      <div className="split-right">
+                        {p.percentage !== null && (
+                          <div className="split-pct">{p.percentage}%</div>
+                        )}
+                        <div className={`split-amt${p.isPlatform ? " platform" : ""}`}>
+                          {formatNaira(p.amount)}
+                          {p.isPlatform && <span style={{ marginLeft: 2, fontSize: 10 }}>· 1.5% of total</span>}
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -449,92 +557,120 @@ export default function MyCutDeal() {
               </div>
 
               {/* Deal Lifecycle */}
-              <div className="mc-card">
-                <div className="mc-card-lbl">Deal Lifecycle</div>
+              <div className="card">
+                <div className="card-lbl">Deal Lifecycle</div>
                 <div className="lc-list">
-                  {lifecycleSteps.map((s, i) => (
-                    <div key={i} className="lc-row">
-                      <div className={`lc-dot ${s.done ? "done" : "grey"}`} />
-                      <div>
-                        <div className={`lc-lbl${s.active ? " bold" : s.done ? "" : " muted"}`}>{s.label}</div>
-                        <div className={`lc-dtl${s.active ? " green" : ""}`}>{s.detail}</div>
+                  {deal.lifecycle.map((step) => (
+                    <div key={step.id} className="lc-item">
+                      <div className="lc-dot-col">
+                        <div className={`lc-dot ${step.status}`} />
+                      </div>
+                      <div className="lc-body">
+                        <div className={`lc-label ${step.status}`}>{step.label}</div>
+                        <div className={`lc-date ${step.status}`}>{step.date}</div>
+                        <div className={`lc-date ${step.status}`} style={{ marginTop: 1 }}>{step.subtitle}</div>
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
-            </div>
-          </div>
 
-          {/* ── RIGHT ── */}
+            </div>
+          </div>{/* end mc-left */}
+
+          {/* ════════ ZONE D: SIDEBAR ════════ */}
           <div className="mc-right">
 
-            {/* Confirmation card */}
-            <div className="mc-scard">
-              <div className="mc-stitle">Confirmation &amp; Execution</div>
+            {/* Confirmation & Execution */}
+            <div className="scard">
+              <div className="scard-title">Confirmation &amp; Execution</div>
 
-              <div className="mc-confbox">
-                <div className="mc-confbox-lbl">Confirmations Received</div>
-                <div className="mc-confbox-count">
-                  <span className="mc-confbox-num">2</span>
-                  <span className="mc-confbox-of">of 3</span>
+              <div className="conf-box">
+                <div className="conf-lbl">Confirmations Received</div>
+                <div className="conf-count">
+                  <span className="conf-num">{confirmedCount}</span>
+                  <span className="conf-of">of {totalConfirmable}</span>
                 </div>
-                <div className="mc-confbox-sub">1 confirmation needed for distribution</div>
-                <div className="mc-prog"><div className="mc-prog-fill" /></div>
-                <div className="mc-parts">
-                  {participants.map((p) => (
-                    <div key={p.name} className="mc-part-row">
-                      {p.status === "Confirmed" ? <CheckCircleIcon /> : <PendingCircleIcon />}
-                      <span className={`mc-part-name${p.status === "Pending" ? " pending" : ""}`}>
-                        {p.name} — {p.status}
-                      </span>
-                    </div>
-                  ))}
+                <div className="conf-sub">
+                  {totalConfirmable - confirmedCount} confirmation{totalConfirmable - confirmedCount !== 1 ? "s" : ""} needed for distribution
+                </div>
+
+                {/* Progress bar — not a range input */}
+                <div className="prog-track">
+                  <div className="prog-fill" style={{ width: `${progressPct}%` }} />
+                </div>
+
+                {/* Participant list */}
+                <div className="part-list">
+                  {deal.participants
+                    .filter((p) => !p.isPlatform)
+                    .map((p) => (
+                      <div key={p.id} className="part-row">
+                        {p.confirmationStatus === "confirmed"
+                          ? <IconCheck />
+                          : <IconPending />
+                        }
+                        <span className={`part-name${p.confirmationStatus === "pending" ? " pending-name" : ""}`}>
+                          {p.displayName} — {p.confirmationStatus === "confirmed" ? "Confirmed" : "Pending"}
+                        </span>
+                      </div>
+                    ))}
                 </div>
               </div>
 
-              <button className="mc-awaiting">Awaiting Adaeze's Confirmation</button>
+              {/* Dynamic awaiting button */}
+              <button className="awaiting-btn">
+                Awaiting {pendingParticipant?.name ?? "Confirmation"}'s Confirmation
+              </button>
 
-              <span className="mc-actions-lbl">Deal Actions</span>
-              <div className="mc-actions">
-                <button className="mc-btn-confirmed">You Already Confirmed ✓</button>
-                <button className="mc-btn-dispute">Raise a Dispute</button>
+              {/* Deal Actions */}
+              <span className="actions-lbl">Deal Actions</span>
+              <div className="actions-list">
+                <button className="btn-base btn-confirmed" disabled>
+                  You Already Confirmed ✓
+                </button>
+                <button className="btn-base btn-dispute">
+                  Raise a Dispute
+                </button>
                 <button
-                  className={`mc-btn-reminder${reminderSent ? " sent" : ""}`}
-                  onClick={() => { setReminderSent(true); setTimeout(() => setReminderSent(false), 3000); }}
+                  className={`btn-base btn-reminder${reminderSent ? " sent" : ""}`}
+                  onClick={() => {
+                    setReminderSent(true);
+                    setTimeout(() => setReminderSent(false), 3000);
+                  }}
                 >
-                  {reminderSent ? "Reminder Sent ✓" : "Send Reminder to Adaeze"}
+                  {reminderSent
+                    ? "Reminder Sent ✓"
+                    : `Send Reminder to ${pendingParticipant?.name ?? "Participant"}`
+                  }
                 </button>
               </div>
 
-              <div className="mc-note">
-                <strong>Note:</strong> Once all 3 confirmations are received, funds will distribute automatically to all parties. This action is irreversible.
+              {/* Auto-distribution notice */}
+              <div className="note-box">
+                <strong>Note: </strong>{deal.autoDistributionNote}
               </div>
             </div>
 
-            {/* Workspace card */}
-            <div className="mc-scard">
-              <span className="mc-ws-lbl">Deal Workspace</span>
-              {[
-                { label: "View Inbox Thread", tag: null },
-                { label: "Version History", tag: null },
-                { label: "Deal Wallet", tag: "₦24M held" },
-              ].map((item, i, arr) => (
-                <div key={item.label}>
-                  <button className="mc-ws-row">
-                    <span className="mc-ws-rowlbl">{item.label}</span>
-                    <div className="mc-ws-right">
-                      {item.tag && <span className="mc-ws-tag">{item.tag}</span>}
-                      <ArrowRightIcon />
+            {/* Deal Workspace */}
+            <div className="scard">
+              <span className="ws-lbl">Deal Workspace</span>
+              {deal.workspaceLinks.map((link, i, arr) => (
+                <div key={link.id}>
+                  <button className="ws-row">
+                    <span className="ws-row-label">{link.label}</span>
+                    <div className="ws-row-right">
+                      {link.tag && <span className="ws-tag">{link.tag}</span>}
+                      <IconArrow />
                     </div>
                   </button>
-                  {i < arr.length - 1 && <div className="mc-ws-div" />}
+                  {i < arr.length - 1 && <div className="ws-div" />}
                 </div>
               ))}
             </div>
 
-          </div>
-        </div>
+          </div>{/* end mc-right */}
+        </div>{/* end mc-layout */}
       </div>
     </>
   );
