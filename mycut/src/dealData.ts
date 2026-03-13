@@ -16,15 +16,6 @@ export interface MediaItem {
   alt: string;
 }
 
-export type DealData = {
-    dealId: string;
-    title: string;
-    category: string;
-    statusBadge: string;
-    location: string;
-
-}
-
 
 
 export interface Participant {
@@ -93,17 +84,25 @@ export const deal: DealData = {
     {
       id: "m3",
       type: "image",
-      src: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=1200&h=500&fit=crop",
-      thumb: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=120&h=80&fit=crop",
+      src: "images/second_image.png",
+      thumb: "images/second_image.png",
       alt: "Electronics assembly",
     },
     {
       id: "m4",
       type: "video",
-      src: "https://www.w3schools.com/html/mov_bbb.mp4",
-      thumb: "https://images.unsplash.com/photo-1518770660439-4636190af475?w=120&h=80&fit=crop",
+      src: "images/third_video.mp4",
+      thumb: "images/third_image.png",
       alt: "Product inspection video",
     },
+
+    {
+        id: "m5",
+        type: "video",
+        src: "images/fourth_video.mp4",
+        thumb: "images/fourth_image.png",
+        alt: "Warehouse drone footage",
+    }
   ],
 
   participants: [
@@ -215,6 +214,17 @@ export const deal: DealData = {
   autoDistributionNote:
     "Once all 3 confirmations are received, funds will distribute automatically to all parties. This action is irreversible.",
 };
+
+
+
+
+
+
+
+
+
+
+
 
 
 export function formatNaira(amount: number): string {
