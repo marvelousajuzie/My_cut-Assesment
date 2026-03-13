@@ -9,7 +9,7 @@ import {
 
 import { IconCheck, IconPending, IconChevronLeft, IconPin, IconArrow } from "./icons.tsx";
 
-import "./styles/MyCutDeal.css";
+import "./style/MyCutDeal.css";
 
 
 
@@ -40,8 +40,6 @@ export default function MyCutDeal() {
   const confirmedCount     = getConfirmedCount(deal);
   const totalConfirmable   = getTotalConfirmable(deal);
   const progressPct        = (confirmedCount / totalConfirmable) * 100;
-
-
 
 
 
@@ -89,20 +87,20 @@ export default function MyCutDeal() {
           </div>
         </nav>
 
-        {/* ── LAYOUT ── */}
+        {}
         <div className="mc-layout">
 
-          {/* ════════ LEFT ════════ */}
+          {}
           <div className="mc-left">
             <button className="mc-back"><IconChevronLeft />&nbsp;Back to Contracts</button>
 
-            {/* ══ ZONE A: HERO CAROUSEL ══ */}
+            {}
             <div className="hero-wrap">
-              {/* Crossfade layers — one per media item */}
+              {}
               {deal.media.map((item, i) => {
                 const isTarget  = i === activeIdx;
                 const isCurrent = i === visibleIdx;
-                // visible = either the new target (fading in) or the old one (fading out)
+
                 const show = isTarget || isCurrent;
                 if (!show) return null;
                 const opacity = isTarget ? 1 : 0;
@@ -152,7 +150,7 @@ export default function MyCutDeal() {
               </div>
             </div>
 
-            {/* Thumbnail strip */}
+            {}
             <div className="thumbs">
               {deal.media.map((item, i) => (
                 <div
@@ -171,6 +169,12 @@ export default function MyCutDeal() {
                 </div>
               ))}
             </div>
+
+
+
+
+
+
 
             {/* ══ ZONE B: FINANCIAL SUMMARY ══ */}
             <div className="fin-bar">
@@ -202,7 +206,7 @@ export default function MyCutDeal() {
               })()}
             </div>
 
-            {/* ══ ZONE C: SPLIT + LIFECYCLE ══ */}
+            {}
             <div className="zone-c">
 
               {/* Split Breakdown */}
@@ -233,7 +237,7 @@ export default function MyCutDeal() {
                     </div>
                   ))}
                 </div>
-              </div>
+              </div> 
 
               {/* Deal Lifecycle */}
               <div className="card">
@@ -255,9 +259,9 @@ export default function MyCutDeal() {
               </div>
 
             </div>
-          </div>{/* end mc-left */}
+          </div>
 
-          {/* ════════ ZONE D: SIDEBAR ════════ */}
+
           <div className="mc-right">
 
             {/* Confirmation & Execution */}

@@ -96,14 +96,10 @@ export const deal: DealData = {
       alt: "Product inspection video",
     },
 
-    {
-        id: "m5",
-        type: "video",
-        src: "images/fourth_video.mp4",
-        thumb: "images/fourth_image.png",
-        alt: "Warehouse drone footage",
-    }
-  ],
+
+
+  
+],
 
   participants: [
     {
@@ -203,6 +199,8 @@ export const deal: DealData = {
       subtitle: "Awaiting final confirmation",
       status: "future",
     },
+    
+
   ],
 
   workspaceLinks: [
