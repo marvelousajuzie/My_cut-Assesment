@@ -80,4 +80,84 @@ export default function MyCutDeal() {
     setTimeout(() => setReminderSent(false), 3000);
   };
 
-  
+  return (
+    <div style={{ fontFamily: "'DM Sans', 'Segoe UI', sans-serif", background: "#F3F4F6", minHeight: "100vh", color: "#1F2937" }}>
+      {/* Top Nav */}
+      <nav style={{ background: "#1C2B22", padding: "0 24px", height: "52px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <div style={{ width: "30px", height: "30px", borderRadius: "50%", background: "#E8F5E9", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+              <path d="M10 2C6 2 3 5.5 3 10s3 8 7 8 7-3.5 7-8-3-8-7-8z" fill="#2D6A4F" />
+              <path d="M7 10l2 2 4-4" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+          <span style={{ color: "white", fontWeight: 600, fontSize: "15px", letterSpacing: "0.2px" }}>MyCut</span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <span style={{ color: "#D1FAE5", fontSize: "14px" }}>Drew Okonkwo</span>
+          <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "#374151", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontSize: "13px", fontWeight: 600 }}>D</div>
+        </div>
+      </nav>
+
+      {/* Main Layout */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: "0", maxWidth: "1200px", margin: "0 auto" }}>
+        {/* LEFT COLUMN */}
+        <div>
+          {/* Back Link */}
+          <div style={{ padding: "14px 24px 0" }}>
+            <button style={{ display: "flex", alignItems: "center", gap: "4px", background: "none", border: "none", cursor: "pointer", fontSize: "13px", color: "#374151", fontWeight: 500 }}>
+              <BackIcon /> Back to Contracts
+            </button>
+          </div>
+
+          {/* Hero Image */}
+          <div style={{ position: "relative", margin: "12px 24px 0", borderRadius: "12px", overflow: "hidden", height: "260px" }}>
+            <img
+              src="https://images.unsplash.com/photo-1553413077-190dd305871c?w=900&h=400&fit=crop"
+              alt="Warehouse"
+              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            />
+            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.72) 40%, rgba(0,0,0,0.1) 100%)" }} />
+            {/* Breadcrumb */}
+            <div style={{ position: "absolute", bottom: "60px", left: "20px", display: "flex", alignItems: "center", gap: "6px", color: "rgba(255,255,255,0.7)", fontSize: "12px" }}>
+              <span>Contracts</span>
+              <span>›</span>
+              <span>Deal #12345</span>
+            </div>
+            {/* Title */}
+            <div style={{ position: "absolute", bottom: "16px", left: "20px", right: "20px" }}>
+              <h1 style={{ color: "white", fontSize: "22px", fontWeight: 700, margin: "0 0 8px", lineHeight: 1.3 }}>
+                Samsung &amp; LG Appliances — Bulk Import Q1 2025
+              </h1>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                <span style={{ background: "#374151", color: "#D1FAE5", fontSize: "11px", fontWeight: 600, padding: "3px 8px", borderRadius: "4px", letterSpacing: "0.5px" }}>
+                  ELECTRONICS IMPORT
+                </span>
+                <span style={{ background: "rgba(251,191,36,0.18)", border: "1px solid rgba(251,191,36,0.4)", color: "#FCD34D", fontSize: "11px", fontWeight: 600, padding: "3px 8px", borderRadius: "4px", letterSpacing: "0.5px", display: "flex", alignItems: "center", gap: "4px" }}>
+                  <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#FCD34D", display: "inline-block" }} />
+                  CONFIRMATION PENDING
+                </span>
+                <span style={{ display: "flex", alignItems: "center", gap: "4px", color: "rgba(255,255,255,0.8)", fontSize: "12px" }}>
+                  <LocationIcon /> Lekki Free Zone, Lagos
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Thumbnails */}
+          <div style={{ display: "flex", gap: "8px", padding: "10px 24px 0" }}>
+            {thumbnails.map((src, i) => (
+              <div
+                key={i}
+                onClick={() => setSelectedThumb(i)}
+                style={{
+                  width: "72px", height: "52px", borderRadius: "6px", overflow: "hidden", cursor: "pointer",
+                  border: selectedThumb === i ? "2px solid #2D6A4F" : "2px solid transparent",
+                  opacity: selectedThumb === i ? 1 : 0.75,
+                  transition: "all 0.15s"
+                }}
+              >
+                <img src={src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              </div>
+            ))}
+          </div>
